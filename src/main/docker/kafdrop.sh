@@ -39,24 +39,29 @@ KAFKA_PROPERTIES_FILE=${KAFKA_PROPERTIES_FILE:-kafka.properties}
 if [ "$KAFKA_PROPERTIES" != "" ]; then
   echo Writing Kafka properties into $KAFKA_PROPERTIES_FILE
   echo "$KAFKA_PROPERTIES" | base64 --decode --ignore-garbage > $KAFKA_PROPERTIES_FILE
-else
-  rm $KAFKA_PROPERTIES_FILE |& > /dev/null | true
+elif [ "$USE_KAFKA_PROPS" == "1" ]; then
+  PROPERTIES=$(env | grep '^KAFKA_PROPS_')
+  touch /tmp/kafka.properties
+  echo "$PROPERTIES" | while read line; do
+      PROP=$(echo ${line:12} | awk -F "=" '{print tolower($1)}') # 12 is the length of KAFKA_PROPS_
+      PROP=${PROP/_/\.}
+      VAL=$(echo ${line:12} | awk -F "=" '{print $2}')
+      echo $(printf "$T$PROP=$VAL\n") >> /tmp/kafka.properties
+  done
+  echo Setting properties file to /tmp/kakfa.properties
+  KAFKA_PROPERTIES_FILE="/tmp/kafka.properties"
 fi
 
 KAFKA_TRUSTSTORE_FILE=${KAFKA_TRUSTSTORE_FILE:-kafka.truststore.jks}
 if [ "$KAFKA_TRUSTSTORE" != "" ]; then
   echo Writing Kafka truststore into $KAFKA_TRUSTSTORE_FILE
   echo "$KAFKA_TRUSTSTORE" | base64 --decode --ignore-garbage > $KAFKA_TRUSTSTORE_FILE
-else
-  rm $KAFKA_TRUSTSTORE_FILE |& > /dev/null | true
 fi
 
 KAFKA_KEYSTORE_FILE=${KAFKA_KEYSTORE_FILE:-kafka.keystore.jks}
 if [ "$KAFKA_KEYSTORE" != "" ]; then
   echo Writing Kafka keystore into $KAFKA_KEYSTORE_FILE
   echo "$KAFKA_KEYSTORE" | base64 --decode --ignore-garbage > $KAFKA_KEYSTORE_FILE
-else
-  rm $KAFKA_KEYSTORE_FILE |& > /dev/null | true
 fi
 
 ARGS="--add-opens=java.base/sun.nio.ch=ALL-UNNAMED -Xss256K \
