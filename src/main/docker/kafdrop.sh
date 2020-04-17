@@ -41,15 +41,14 @@ if [ "$KAFKA_PROPERTIES" != "" ]; then
   echo "$KAFKA_PROPERTIES" | base64 --decode --ignore-garbage > $KAFKA_PROPERTIES_FILE
 elif [ "$USE_KAFKA_PROPS" == "1" ]; then
   PROPERTIES=$(env | grep '^KAFKA_PROPS_')
-  touch /tmp/kafka.properties
+  echo "" > $KAFKA_PROPERTIES_FILE
   echo "$PROPERTIES" | while read line; do
       PROP=$(echo ${line:12} | awk -F "=" '{print tolower($1)}') # 12 is the length of KAFKA_PROPS_
-      PROP=${PROP/_/\.}
-      VAL=$(echo ${line:12} | awk -F "=" '{print $2}')
-      echo $(printf "$T$PROP=$VAL\n") >> /tmp/kafka.properties
+      PROP=$(tr '_' '.' <<< $PROP)
+      VAL=$(echo $line | awk -F "=" '{print $2}')
+      echo $(printf "$PROP=$VAL\n") >> $KAFKA_PROPERTIES_FILE
+      echo Writing $PROP to $KAFKA_PROPERTIES_FILE
   done
-  echo Setting properties file to /tmp/kakfa.properties
-  KAFKA_PROPERTIES_FILE="/tmp/kafka.properties"
 fi
 
 KAFKA_TRUSTSTORE_FILE=${KAFKA_TRUSTSTORE_FILE:-kafka.truststore.jks}
@@ -69,5 +68,5 @@ ARGS="--add-opens=java.base/sun.nio.ch=ALL-UNNAMED -Xss256K \
      $HEAP_ARGS \
      $JVM_OPTS"
 
-java $ARGS -jar /kafdrop*/kafdrop*jar $CMD_ARGS
+java $ARGS -jar kafdrop*jar $CMD_ARGS
 
